@@ -5,7 +5,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc",
+    "build": "tsc && npm run copy-migrations",
+    "copy-migrations": "node -e \"const fs = require('fs'); const path = require('path'); const srcDir = path.join(__dirname, 'src/migrations'); const distDir = path.join(__dirname, 'dist/migrations'); if (!fs.existsSync(distDir)) fs.mkdirSync(distDir, { recursive: true }); fs.readdirSync(srcDir).filter(f => f.endsWith('.sql')).forEach(f => fs.copyFileSync(path.join(srcDir, f), path.join(distDir, f)));\"",
     "start": "node dist/server.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
@@ -13,6 +14,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "migrate": "node dist/migrations/runner.js",
+    "seed": "ts-node src/scripts/seed-data.ts",
     "validate-env": "ts-node scripts/validate-env.ts"
   },
   "keywords": [

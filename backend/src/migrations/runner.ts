@@ -7,7 +7,17 @@ async function runMigrations() {
     console.log('Starting database migrations...');
 
     // Get all migration files
-    const migrationsDir = path.join(__dirname);
+    // In production (dist), SQL files are in dist/migrations
+    // In development, we need to check both locations
+    let migrationsDir = path.join(__dirname);
+    if (!fs.existsSync(path.join(migrationsDir, '001_create_users_table.sql'))) {
+      // If SQL files not in dist, look in src (development mode)
+      const srcMigrationsDir = path.join(__dirname, '../../src/migrations');
+      if (fs.existsSync(srcMigrationsDir)) {
+        migrationsDir = srcMigrationsDir;
+      }
+    }
+    
     const files = fs
       .readdirSync(migrationsDir)
       .filter((file) => file.endsWith('.sql'))

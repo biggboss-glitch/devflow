@@ -1,9 +1,17 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { Organizations } from './pages/Organizations';
+import { Teams } from './pages/Teams';
+import { Projects } from './pages/Projects';
+import { Sprints } from './pages/Sprints';
+import { Tasks } from './pages/Tasks';
+import { Notifications } from './pages/Notifications';
+import { Analytics } from './pages/Analytics';
 
 function App() {
   return (
@@ -16,7 +24,79 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/organizations"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Organizations />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teams"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Teams />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Projects />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sprints"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Sprints />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Tasks />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Notifications />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Analytics />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
