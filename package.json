@@ -1,0 +1,34 @@
+{
+  "name": "devflow",
+  "version": "1.0.0",
+  "description": "DevFlow - Developer Collaboration Platform",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "backend/src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "frontend/src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
