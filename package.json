@@ -19,12 +19,12 @@
   },
   "lint-staged": {
     "backend/src/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "npx eslint --fix",
+      "npx prettier --write"
     ],
     "frontend/src/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "npx eslint --fix",
+      "npx prettier --write"
     ]
   },
   "engines": {
