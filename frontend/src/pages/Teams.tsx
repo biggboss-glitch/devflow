@@ -85,10 +85,6 @@ export const Teams: React.FC = () => {
     }
   };
 
-  const handleViewTeam = (team: Team) => {
-    setTeamModal({ isOpen: true, type: 'view', team });
-  };
-
   const handleEditTeam = (team: Team) => {
     setFormData({
       name: team.name,

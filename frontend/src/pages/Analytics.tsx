@@ -56,7 +56,6 @@ export const Analytics: React.FC = () => {
       const completed = tasks.filter((t: any) => t.status === 'done').length;
       const inProgress = tasks.filter((t: any) => t.status === 'in_progress').length;
       const toDo = tasks.filter((t: any) => t.status === 'todo').length;
-      const review = tasks.filter((t: any) => t.status === 'review').length;
 
       const byPriority = {
         high: tasks.filter((t: any) => t.priority === 'high').length,

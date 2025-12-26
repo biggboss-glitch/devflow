@@ -298,11 +298,6 @@ export const Tasks: React.FC = () => {
                 {column.key !== 'done' && (
                   <button
                     onClick={() => {
-                      const nextStatuses: Record<string, string> = {
-                        todo: 'in_progress',
-                        in_progress: 'review',
-                        review: 'done',
-                      };
                       // This would be for drag-drop in a real implementation
                     }}
                     className="w-full mt-4 p-2 text-sm text-gray-600 border-2 border-dashed border-gray-300 rounded hover:border-blue-400 transition"
