@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 
 interface Notification {
@@ -10,22 +11,37 @@ interface Notification {
 }
 
 export const Notifications: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    if (isAuthenticated) {
+      fetchNotifications();
+    }
+  }, [isAuthenticated]);
 
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<Notification[]>('/notifications');
-      setNotifications(response || []);
       setError('');
+      const response = await apiClient.get<{ success: boolean; data: Notification[] }>('/notifications');
+      if (response.success && Array.isArray(response.data)) {
+        setNotifications(response.data);
+      } else {
+        setNotifications([]);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to fetch notifications');
+      const errorMessage = err.response?.data?.error?.message || 'Failed to fetch notifications';
+      setError(errorMessage);
+      console.error('Error fetching notifications:', err);
+      setNotifications([]); // Ensure it's always an array
+      
+      // If unauthorized, let the interceptor handle redirect
+      if (err.response?.status === 401) {
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -34,9 +50,11 @@ export const Notifications: React.FC = () => {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await apiClient.patch(`/notifications/${notificationId}/read`, {});
-      setNotifications(notifications.map(n =>
-        n.id === notificationId ? { ...n, is_read: true } : n
-      ));
+      if (Array.isArray(notifications)) {
+        setNotifications(notifications.map(n =>
+          n.id === notificationId ? { ...n, is_read: true } : n
+        ));
+      }
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -45,7 +63,9 @@ export const Notifications: React.FC = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await apiClient.patch('/notifications/read-all', {});
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      if (Array.isArray(notifications)) {
+        setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      }
     } catch (err) {
       console.error('Error marking all as read:', err);
     }
@@ -54,7 +74,9 @@ export const Notifications: React.FC = () => {
   const handleDelete = async (notificationId: string) => {
     try {
       await apiClient.delete(`/notifications/${notificationId}`);
-      setNotifications(notifications.filter(n => n.id !== notificationId));
+      if (Array.isArray(notifications)) {
+        setNotifications(notifications.filter(n => n.id !== notificationId));
+      }
     } catch (err) {
       console.error('Error deleting notification:', err);
     }
@@ -70,7 +92,7 @@ export const Notifications: React.FC = () => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.is_read).length : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -95,6 +117,11 @@ export const Notifications: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
             {error}
+            {error.includes('token') || error.includes('Unauthorized') ? (
+              <div className="mt-2 text-sm">
+                Please <a href="/login" className="text-blue-600 underline">login</a> to continue.
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -103,7 +130,7 @@ export const Notifications: React.FC = () => {
             <div className="text-center py-8">
               <p className="text-gray-500">Loading notifications...</p>
             </div>
-          ) : notifications.length === 0 ? (
+          ) : !Array.isArray(notifications) || notifications.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-12 text-center">
               <p className="text-3xl mb-2">✨</p>
               <p className="text-gray-500 text-lg">No notifications yet</p>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 
 interface Project {
@@ -17,6 +18,7 @@ interface ProjectModalData {
 }
 
 export const Projects: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,9 +33,11 @@ export const Projects: React.FC = () => {
   const [projectModal, setProjectModal] = useState<ProjectModalData>({ isOpen: false, type: 'view', project: null });
 
   useEffect(() => {
-    fetchTeams();
-    fetchProjects();
-  }, []);
+    if (isAuthenticated) {
+      fetchTeams();
+      fetchProjects();
+    }
+  }, [isAuthenticated]);
 
   const fetchTeams = async () => {
     try {
@@ -48,11 +52,27 @@ export const Projects: React.FC = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ success: boolean; data: Project[] }>('/projects');
-      setProjects(response.data || []);
       setError('');
+      const response = await apiClient.get<{ success: boolean; data: Project[] }>('/projects');
+      if (response.success) {
+        // Ensure all projects have a status
+        const projectsWithStatus = (response.data || []).map(project => ({
+          ...project,
+          status: project.status || 'active'
+        }));
+        setProjects(projectsWithStatus);
+      } else {
+        setError('Failed to fetch projects');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to fetch projects');
+      const errorMessage = err.response?.data?.error?.message || 'Failed to fetch projects';
+      setError(errorMessage);
+      console.error('Error fetching projects:', err);
+      
+      // If unauthorized, let the interceptor handle redirect
+      if (err.response?.status === 401) {
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -60,6 +80,8 @@ export const Projects: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     if (!formData.name.trim()) {
       setError('Project name is required');
       return;
@@ -67,13 +89,28 @@ export const Projects: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await apiClient.post<{ success: boolean; data: Project }>('/projects', formData);
-      setProjects([...projects, response.data]);
-      setFormData({ name: '', description: '', status: 'active', team_id: '' });
-      setShowForm(false);
       setError('');
+      const response = await apiClient.post<{ success: boolean; data: Project }>('/projects', formData);
+      
+      if (response.success && response.data) {
+        // Ensure status is set
+        const newProject = { ...response.data, status: response.data.status || 'active' };
+        setProjects([...projects, newProject]);
+        setFormData({ name: '', description: '', status: 'active', team_id: '' });
+        setShowForm(false);
+        setError('');
+      } else {
+        setError('Failed to create project');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to create project');
+      const errorMessage = err.response?.data?.error?.message || 'Failed to create project';
+      setError(errorMessage);
+      console.error('Error creating project:', err);
+      
+      // If unauthorized, let the interceptor handle redirect
+      if (err.response?.status === 401) {
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -135,7 +172,8 @@ export const Projects: React.FC = () => {
     setFormData({ name: '', description: '', status: 'active', team_id: '' });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
     switch(status) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-blue-100 text-blue-800';
@@ -158,8 +196,15 @@ export const Projects: React.FC = () => {
             <p className="mt-2 text-gray-600">Manage your team projects</p>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowForm(!showForm);
+              setError('');
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            disabled={loading}
           >
             {showForm ? 'Cancel' : '+ Create Project'}
           </button>
@@ -168,6 +213,11 @@ export const Projects: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
             {error}
+            {error.includes('token') || error.includes('Unauthorized') ? (
+              <div className="mt-2 text-sm">
+                Please <a href="/login" className="text-blue-600 underline">login</a> to continue.
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -266,8 +316,8 @@ export const Projects: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(project.status)}`}>
-                      {project.status.replace('_', ' ').toUpperCase()}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(project.status || 'active')}`}>
+                      {(project.status || 'active').replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">{project.description || 'No description'}</p>
@@ -370,8 +420,8 @@ export const Projects: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
-                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(projectModal.project.status)}`}>
-                    {projectModal.project.status.replace('_', ' ').toUpperCase()}
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(projectModal.project.status || 'active')}`}>
+                    {(projectModal.project.status || 'active').replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
                 <div>

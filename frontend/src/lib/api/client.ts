@@ -24,6 +24,9 @@ class ApiClient {
         const token = localStorage.getItem('token');
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
+        } else if (!token && !config.url?.includes('/auth/login') && !config.url?.includes('/auth/signup')) {
+          // No token and not an auth endpoint - this will be handled by 401 response
+          console.warn('No token found for request to:', config.url);
         }
         return config;
       },

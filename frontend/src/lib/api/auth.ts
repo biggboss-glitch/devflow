@@ -22,10 +22,14 @@ export interface SignupData {
 
 export interface AuthResponse {
   success: boolean;
-  data: {
+  data?: {
     user: User;
     token: string;
     refreshToken: string;
+  };
+  error?: {
+    message: string;
+    code: string;
   };
 }
 

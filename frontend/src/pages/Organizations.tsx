@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 
 interface Organization {
@@ -15,6 +16,7 @@ interface OrgModalData {
 }
 
 export const Organizations: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
@@ -23,18 +25,31 @@ export const Organizations: React.FC = () => {
   const [orgModal, setOrgModal] = useState<OrgModalData>({ isOpen: false, type: 'view', org: null });
 
   useEffect(() => {
-    fetchOrganizations();
-  }, []);
+    if (isAuthenticated) {
+      fetchOrganizations();
+    }
+  }, [isAuthenticated]);
 
   const fetchOrganizations = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ success: boolean; data: Organization[] }>('/organizations');
-      setOrganizations(response.data || []);
       setError('');
+      const response = await apiClient.get<{ success: boolean; data: Organization[] }>('/organizations');
+      if (response.success) {
+        setOrganizations(response.data || []);
+      } else {
+        setError('Failed to fetch organizations');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to fetch organizations');
+      const errorMessage = err.response?.data?.error?.message || 'Failed to fetch organizations';
+      setError(errorMessage);
       console.error('Error fetching organizations:', err);
+      
+      // If unauthorized, the interceptor should handle redirect
+      if (err.response?.status === 401) {
+        // Token might be invalid, let the interceptor handle it
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -42,6 +57,8 @@ export const Organizations: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     if (!formData.name.trim()) {
       setError('Organization name is required');
       return;
@@ -49,15 +66,26 @@ export const Organizations: React.FC = () => {
 
     try {
       setLoading(true);
+      setError('');
       const response = await apiClient.post<{ success: boolean; data: Organization }>('/organizations', formData);
       
-      setOrganizations([...organizations, response.data]);
-      setFormData({ name: '', description: '' });
-      setShowForm(false);
-      setError('');
+      if (response.success && response.data) {
+        setOrganizations([...organizations, response.data]);
+        setFormData({ name: '', description: '' });
+        setShowForm(false);
+        setError('');
+      } else {
+        setError('Failed to create organization');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to create organization');
+      const errorMessage = err.response?.data?.error?.message || 'Failed to create organization';
+      setError(errorMessage);
       console.error('Error creating organization:', err);
+      
+      // If unauthorized, let the interceptor handle redirect
+      if (err.response?.status === 401) {
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -124,8 +152,15 @@ export const Organizations: React.FC = () => {
             <p className="mt-2 text-gray-600">Manage your organizations and teams</p>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowForm(!showForm);
+              setError('');
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            disabled={loading}
           >
             {showForm ? 'Cancel' : '+ Create Organization'}
           </button>
@@ -135,6 +170,11 @@ export const Organizations: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
             {error}
+            {error.includes('token') || error.includes('Unauthorized') ? (
+              <div className="mt-2 text-sm">
+                Please <a href="/login" className="text-blue-600 underline">login</a> to continue.
+              </div>
+            ) : null}
           </div>
         )}
 

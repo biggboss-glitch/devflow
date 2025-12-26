@@ -60,10 +60,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
-    if (response.success && response.data) {
+    if (response.success && response.data && response.data.user) {
       setUser(response.data.user);
+      // Verify token was stored
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Token was not stored after login');
+        throw new Error('Failed to store authentication token');
+      }
     } else {
-      throw new Error('Login failed');
+      throw new Error(response.error?.message || 'Login failed');
     }
   };
 
