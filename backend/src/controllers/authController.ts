@@ -10,6 +10,10 @@ export class AuthController {
     try {
       const { email, password, name, role, avatar_url } = req.body;
 
+      // Security: Public signup can only create 'developer' role
+      // Admins must use /api/users endpoint to create team_lead or admin
+      const userRole = role === 'developer' ? 'developer' : 'developer';
+      
       // Check if user already exists
       const existingUser = await userRepository.findByEmail(email);
       if (existingUser) {
@@ -25,12 +29,12 @@ export class AuthController {
       // Hash password
       const password_hash = await authService.hashPassword(password);
 
-      // Create user
+      // Create user (always as developer for public signup)
       const user = await userRepository.create({
         email,
         password_hash,
         name,
-        role,
+        role: userRole,
         avatar_url,
       });
 

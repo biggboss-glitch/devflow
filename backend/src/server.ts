@@ -14,6 +14,7 @@ import { swaggerSpec } from './config/swagger';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 import organizationRoutes from './routes/organizationRoutes';
 import teamRoutes from './routes/teamRoutes';
 import projectRoutes from './routes/projectRoutes';
@@ -106,6 +107,7 @@ if (config.swagger.enabled) {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/organizations', organizationRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/projects', projectRoutes);
