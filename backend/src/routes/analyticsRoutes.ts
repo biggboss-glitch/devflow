@@ -5,6 +5,9 @@ import { authenticate } from '../middleware/auth';
 const router = Router();
 const analyticsController = new AnalyticsController();
 
+router.get('/dashboard/stats', authenticate, (req, res) =>
+  analyticsController.getDashboardStats(req, res)
+);
 router.get('/sprints/:sprintId/analytics', authenticate, (req, res) =>
   analyticsController.getSprintAnalytics(req, res)
 );

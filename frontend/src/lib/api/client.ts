@@ -38,7 +38,18 @@ class ApiClient {
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+        // Handle 401 Unauthorized errors
         if (error.response?.status === 401 && !originalRequest._retry) {
+          // Don't retry refresh token endpoint
+          if (originalRequest.url?.includes('/auth/refresh')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
+            return Promise.reject(error);
+          }
+
           originalRequest._retry = true;
 
           try {
@@ -48,20 +59,29 @@ class ApiClient {
                 refreshToken,
               });
 
-              const { token } = response.data.data;
-              localStorage.setItem('token', token);
+              if (response.data?.success && response.data?.data?.token) {
+                const { token } = response.data.data;
+                localStorage.setItem('token', token);
 
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
+                if (originalRequest.headers) {
+                  originalRequest.headers.Authorization = `Bearer ${token}`;
+                }
+
+                return this.client(originalRequest);
+              } else {
+                throw new Error('Invalid refresh token response');
               }
-
-              return this.client(originalRequest);
+            } else {
+              throw new Error('No refresh token available');
             }
           } catch (refreshError) {
-            // Refresh failed, redirect to login
+            // Refresh failed, clear tokens and redirect to login
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
-            window.location.href = '/login';
+            // Only redirect if we're not already on login page
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
             return Promise.reject(refreshError);
           }
         }

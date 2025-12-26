@@ -32,7 +32,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 text-white transition-all duration-300 flex flex-col`}>
         <div className="p-4 flex items-center justify-between">
-          {sidebarOpen && <h1 className="text-xl font-bold">DevFlow</h1>}
+          {sidebarOpen ? (
+            <div className="flex items-center gap-2">
+              <img src="/devflow-icon.svg" alt="DevFlow" className="w-8 h-8" />
+              <h1 className="text-xl font-bold">DevFlow</h1>
+            </div>
+          ) : (
+            <img src="/devflow-icon.svg" alt="DevFlow" className="w-8 h-8 mx-auto" />
+          )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 hover:bg-gray-800 rounded-lg"
@@ -77,17 +84,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow">
-          <div className="px-6 py-4">
-            <h2 className="text-2xl font-semibold text-gray-900">
-              {user?.name && `Welcome, ${user.name}`}
-            </h2>
-          </div>
-        </header>
-
         {/* Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gray-50">
           {children}
         </main>
       </div>

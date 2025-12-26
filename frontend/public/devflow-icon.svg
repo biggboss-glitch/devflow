@@ -1,0 +1,36 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Green Gear in Center -->
+  <g transform="translate(32, 32)">
+    <!-- Gear body -->
+    <circle cx="0" cy="0" r="12" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+    <!-- Center hole -->
+    <circle cx="0" cy="0" r="4" fill="white"/>
+    <!-- Gear teeth -->
+    <rect x="-1" y="-14" width="2" height="4" fill="#16a34a"/>
+    <rect x="-1" y="10" width="2" height="4" fill="#16a34a"/>
+    <rect x="-14" y="-1" width="4" height="2" fill="#16a34a"/>
+    <rect x="10" y="-1" width="4" height="2" fill="#16a34a"/>
+    <!-- Diagonal teeth -->
+    <rect x="8" y="-8" width="2" height="3" fill="#16a34a" transform="rotate(45)"/>
+    <rect x="-10" y="8" width="2" height="3" fill="#16a34a" transform="rotate(45)"/>
+    <rect x="8" y="8" width="2" height="3" fill="#16a34a" transform="rotate(-45)"/>
+    <rect x="-10" y="-8" width="2" height="3" fill="#16a34a" transform="rotate(-45)"/>
+  </g>
+  
+  <!-- Top-right arrow (Blue) -->
+  <path d="M 45 15 Q 50 20, 50 25" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 48 22 L 50 25 L 47 24" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linejoin="round"/>
+  
+  <!-- Bottom-right arrow (Dark Grey) -->
+  <path d="M 50 40 Q 45 45, 40 45" stroke="#4b5563" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 43 43 L 40 45 L 42 42" stroke="#4b5563" stroke-width="3" fill="none" stroke-linejoin="round"/>
+  
+  <!-- Bottom-left arrow (Red) -->
+  <path d="M 15 50 Q 10 45, 10 40" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 12 43 L 10 40 L 13 42" stroke="#ef4444" stroke-width="3" fill="none" stroke-linejoin="round"/>
+  
+  <!-- Top-left arrow (Dark Grey) -->
+  <path d="M 10 25 Q 15 20, 20 15" stroke="#4b5563" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 17 18 L 20 15 L 18 18" stroke="#4b5563" stroke-width="3" fill="none" stroke-linejoin="round"/>
+</svg>
+

@@ -1,6 +1,37 @@
 import { Request, Response } from 'express';
+import pool from '../config/database';
 
 export class AnalyticsController {
+  async getDashboardStats(_req: Request, res: Response) {
+    try {
+      // Get counts for tasks, teams, and projects
+      const [tasksResult, teamsResult, projectsResult] = await Promise.all([
+        pool.query('SELECT COUNT(*) as count FROM tasks'),
+        pool.query('SELECT COUNT(*) as count FROM teams'),
+        pool.query('SELECT COUNT(*) as count FROM projects'),
+      ]);
+
+      const stats = {
+        tasks: parseInt(tasksResult.rows[0].count),
+        teams: parseInt(teamsResult.rows[0].count),
+        projects: parseInt(projectsResult.rows[0].count),
+      };
+
+      return res.status(200).json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      console.error('Get dashboard stats error:', error);
+      return res.status(500).json({
+        success: false,
+        error: {
+          message: 'Internal server error',
+          code: 'INTERNAL_ERROR',
+        },
+      });
+    }
+  }
   async getSprintAnalytics(req: Request, res: Response) {
     try {
       const { sprintId } = req.params;

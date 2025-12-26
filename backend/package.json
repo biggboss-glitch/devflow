@@ -14,7 +14,6 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "migrate": "node dist/migrations/runner.js",
-    "seed": "ts-node src/scripts/seed-data.ts",
     "validate-env": "ts-node scripts/validate-env.ts"
   },
   "keywords": [
@@ -37,6 +36,8 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
     "socket.io": "^4.6.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.11.0",
     "zod": "^3.22.4"
   },
@@ -63,8 +64,6 @@
     "postcss": "^8.5.6",
     "prettier": "^3.1.1",
     "supertest": "^6.3.3",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "tailwindcss": "^4.1.18",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2",

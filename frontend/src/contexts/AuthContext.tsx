@@ -35,13 +35,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token) {
         try {
           const response = await authApi.getMe();
-          if (response.success) {
+          if (response.success && response.data) {
             setUser(response.data);
+          } else {
+            // Token is invalid or user not found
+            authApi.logout();
+            setUser(null);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to fetch user:', error);
+          // Clear invalid token
           authApi.logout();
+          setUser(null);
         }
+      } else {
+        // No token, ensure user is null
+        setUser(null);
       }
       setLoading(false);
     };
