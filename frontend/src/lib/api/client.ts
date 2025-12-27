@@ -63,14 +63,14 @@ class ApiClient {
               });
 
               if (response.data?.success && response.data?.data?.token) {
-                const { token } = response.data.data;
-                localStorage.setItem('token', token);
+              const { token } = response.data.data;
+              localStorage.setItem('token', token);
 
-                if (originalRequest.headers) {
-                  originalRequest.headers.Authorization = `Bearer ${token}`;
-                }
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
 
-                return this.client(originalRequest);
+              return this.client(originalRequest);
               } else {
                 throw new Error('Invalid refresh token response');
               }
@@ -83,7 +83,7 @@ class ApiClient {
             localStorage.removeItem('refreshToken');
             // Only redirect if we're not already on login page
             if (window.location.pathname !== '/login') {
-              window.location.href = '/login';
+            window.location.href = '/login';
             }
             return Promise.reject(refreshError);
           }

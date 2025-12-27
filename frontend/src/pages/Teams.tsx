@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Team {
   id: string;
@@ -17,6 +18,13 @@ interface Member {
   email?: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface TeamModalData {
   isOpen: boolean;
   type: 'view' | 'edit' | 'members';
@@ -25,6 +33,7 @@ interface TeamModalData {
 }
 
 export const Teams: React.FC = () => {
+  const { user } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +45,15 @@ export const Teams: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [teamModal, setTeamModal] = useState<TeamModalData>({ isOpen: false, type: 'view', team: null });
+  const [users, setUsers] = useState<User[]>([]);
+  const [showAddMemberForm, setShowAddMemberForm] = useState(false);
+  const [addMemberData, setAddMemberData] = useState({
+    user_id: '',
+    role: 'developer' as 'developer' | 'team_lead',
+  });
+  
+  // Check if user can manage team members (team_lead or admin)
+  const canManageMembers = user?.role === 'admin' || user?.role === 'team_lead';
 
   useEffect(() => {
     fetchOrganizations();
@@ -114,16 +132,105 @@ export const Teams: React.FC = () => {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      // Fetch users from team endpoint (available for team leads)
+      const response = await apiClient.get<{ success: boolean; data: User[] }>('/teams/available-users');
+      if (response.success && Array.isArray(response.data)) {
+        setUsers(response.data);
+      }
+    } catch (err: any) {
+      console.error('Error fetching users:', err);
+      const errorMessage = err.response?.data?.error?.message || 'Failed to fetch users';
+      setError(errorMessage);
+      setUsers([]);
+    }
+  };
+
   const handleViewMembers = async (team: Team) => {
     try {
       setLoading(true);
-      // Assuming there's an endpoint to get team members
+      setError('');
+      // Fetch team members
       const response = await apiClient.get<{ success: boolean; data: Member[] }>(`/teams/${team.id}/members`);
       setTeamModal({ isOpen: true, type: 'members', team, members: response.data || [] });
+      // Fetch users if user can manage members
+      if (canManageMembers) {
+        await fetchUsers();
+      }
     } catch (err: any) {
       console.error('Error fetching team members:', err);
-      // Fallback: show modal without members
+      const errorMessage = err.response?.data?.error?.message || 'Failed to fetch team members';
+      setError(errorMessage);
       setTeamModal({ isOpen: true, type: 'members', team, members: [] });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamModal.team || !addMemberData.user_id) {
+      setError('Please select a user');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const response = await apiClient.post<{ success: boolean; data: Member }>(
+        `/teams/${teamModal.team.id}/members`,
+        {
+          user_id: addMemberData.user_id,
+          role: addMemberData.role,
+        }
+      );
+      
+      if (response.success && response.data) {
+        // Refresh members list
+        const membersResponse = await apiClient.get<{ success: boolean; data: Member[] }>(
+          `/teams/${teamModal.team!.id}/members`
+        );
+        setTeamModal({
+          ...teamModal,
+          members: membersResponse.data || [],
+        });
+        setAddMemberData({ user_id: '', role: 'developer' });
+        setShowAddMemberForm(false);
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error?.message || 'Failed to add member';
+      setError(errorMessage);
+      console.error('Error adding member:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!teamModal.team) return;
+    
+    if (!window.confirm('Are you sure you want to remove this member from the team?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      await apiClient.delete(`/teams/${teamModal.team.id}/members/${userId}`);
+      
+      // Refresh members list
+      const response = await apiClient.get<{ success: boolean; data: Member[] }>(
+        `/teams/${teamModal.team.id}/members`
+      );
+      setTeamModal({
+        ...teamModal,
+        members: response.data || [],
+      });
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error?.message || 'Failed to remove member';
+      setError(errorMessage);
+      console.error('Error removing member:', err);
     } finally {
       setLoading(false);
     }
@@ -149,6 +256,9 @@ export const Teams: React.FC = () => {
   const closeModal = () => {
     setTeamModal({ isOpen: false, type: 'view', team: null });
     setFormData({ name: '', description: '', organization_id: '' });
+    setShowAddMemberForm(false);
+    setAddMemberData({ user_id: '', role: 'developer' });
+    setError('');
   };
 
   return (
@@ -285,26 +395,143 @@ export const Teams: React.FC = () => {
 
       {/* Team Modal */}
       {teamModal.isOpen && teamModal.team && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={closeModal}>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
+            {/* Close Button (X) */}
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-2xl font-bold mb-4 pr-8">
               {teamModal.type === 'edit' ? 'Edit Team' : teamModal.type === 'members' ? 'Team Members' : 'Team Details'}
             </h2>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
             {teamModal.type === 'members' ? (
               <div className="space-y-4">
+                {/* Add Member Section */}
+                {canManageMembers && (
+                  <div className="border-b pb-4">
+                    {!showAddMemberForm ? (
+                      <button
+                        onClick={() => {
+                          setShowAddMemberForm(true);
+                          setError('');
+                          if (users.length === 0) {
+                            fetchUsers();
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+                      >
+                        + Add Member
+                      </button>
+                    ) : (
+                      <form onSubmit={handleAddMember} className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Select User *
+                          </label>
+                          {users.length === 0 ? (
+                            <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded">
+                              Loading users... or you may not have permission to view users.
+                            </div>
+                          ) : (
+                            <select
+                              value={addMemberData.user_id}
+                              onChange={(e) => setAddMemberData({ ...addMemberData, user_id: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              required
+                            >
+                              <option value="">Select a user</option>
+                              {users
+                                .filter((u) => !teamModal.members?.some((m) => m.user_id === u.id))
+                                .map((user) => (
+                                  <option key={user.id} value={user.id}>
+                                    {user.name} ({user.email}) - {user.role}
+                                  </option>
+                                ))}
+                            </select>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Role in Team *
+                          </label>
+                          <select
+                            value={addMemberData.role}
+                            onChange={(e) => setAddMemberData({ ...addMemberData, role: e.target.value as 'developer' | 'team_lead' })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            required
+                          >
+                            <option value="developer">Developer</option>
+                            <option value="team_lead">Team Lead</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                          >
+                            {loading ? 'Adding...' : 'Add'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddMemberForm(false);
+                              setAddMemberData({ user_id: '', role: 'developer' });
+                              setError('');
+                            }}
+                            className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
+
+                {/* Members List */}
                 {teamModal.members && teamModal.members.length > 0 ? (
-                  <div className="space-y-2">
-                    {teamModal.members.map((member) => (
-                      <div key={member.id} className="p-3 bg-gray-50 rounded">
-                        <p className="font-medium">{member.name || 'Unknown'}</p>
-                        <p className="text-sm text-gray-600">{member.email || member.user_id}</p>
-                        <p className="text-xs text-gray-500 mt-1">Role: {member.role}</p>
-                      </div>
-                    ))}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {teamModal.members.map((member) => {
+                      // Handle both id and user_id from backend response
+                      const userId = member.user_id || member.id;
+                      return (
+                        <div key={member.id || member.user_id} className="p-3 bg-gray-50 rounded flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{member.name || 'Unknown'}</p>
+                            <p className="text-xs text-gray-600">{member.email || userId}</p>
+                            <p className="text-xs text-gray-500 mt-1">Role: {member.role}</p>
+                          </div>
+                          {canManageMembers && (
+                            <button
+                              onClick={() => handleRemoveMember(userId)}
+                              disabled={loading || !userId}
+                              className="ml-2 px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100 transition disabled:opacity-50"
+                              title="Remove member"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-gray-600">No members yet</p>
+                  <p className="text-gray-600 text-sm text-center py-4">No members yet</p>
                 )}
               </div>
             ) : teamModal.type === 'edit' ? (

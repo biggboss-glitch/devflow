@@ -8,6 +8,8 @@ const teamController = new TeamController();
 
 router.post('/', authenticate, requireTeamLead, (req, res) => teamController.create(req, res));
 router.get('/', authenticate, (req, res) => teamController.getAll(req, res));
+// IMPORTANT: Specific routes must come before parameterized routes
+router.get('/available-users', authenticate, requireTeamLead, (req, res) => teamController.getAvailableUsers(req, res));
 router.get('/:id', authenticate, (req, res) => teamController.getById(req, res));
 router.patch('/:id', authenticate, requireTeamLead, (req, res) =>
   teamController.update(req, res)

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { TeamService } from '../services/teamService';
+import { UserRepository } from '../repositories/userRepository';
 
 const teamService = new TeamService();
 
@@ -245,6 +246,37 @@ export class TeamController {
           },
         });
       }
+      return res.status(500).json({
+        success: false,
+        error: {
+          message: 'Internal server error',
+          code: 'INTERNAL_ERROR',
+        },
+      });
+    }
+  }
+
+  async getAvailableUsers(_req: Request, res: Response) {
+    try {
+      // This endpoint allows team leads to get users for adding to teams
+      const userRepo = new UserRepository();
+      const users = await userRepo.findAll(100, 0);
+
+      // Return users without sensitive data
+      const safeUsers = users.map((user: any) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar_url: user.avatar_url,
+      }));
+
+      return res.status(200).json({
+        success: true,
+        data: safeUsers,
+      });
+    } catch (error: any) {
+      console.error('Get available users error:', error);
       return res.status(500).json({
         success: false,
         error: {

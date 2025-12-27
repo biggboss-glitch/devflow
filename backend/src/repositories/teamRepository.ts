@@ -100,7 +100,7 @@ export class TeamRepository {
 
   async getMembers(teamId: string): Promise<any[]> {
     const query = `
-      SELECT u.id, u.name, u.email, u.avatar_url, tm.role, tm.joined_at
+      SELECT u.id as user_id, u.id, u.name, u.email, u.avatar_url, tm.role, tm.joined_at
       FROM team_members tm
       JOIN users u ON tm.user_id = u.id
       WHERE tm.team_id = $1
